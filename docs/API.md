@@ -16,6 +16,7 @@ Base URL: `/api`. Kontrak antar frontend, backend, dan tim Data/AI. Versi OpenAP
 | Method | Path | Keterangan |
 |---|---|---|
 | GET | `/health` | `{ status: "ok" }` |
+| GET | `/health/db` | Cek koneksi database (`select 1`): `200 { status: "ok" }` atau `503 { status: "error", message }` |
 | GET | `/api/menus?category=` | Daftar menu tersedia (tidak termasuk yang dihapus) |
 | GET | `/api/menus/:slug` | Detail satu menu |
 | POST | `/api/events` | Catat event pengunjung. Rate limit per IP + session |

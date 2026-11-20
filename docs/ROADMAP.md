@@ -3,8 +3,8 @@
 Sumber: Project Plan final. Progres harian dipantau di GitHub Projects.
 
 ## Minggu 1 — 20–26 Nov 2026: Fondasi
-- [ ] Repo, branch protection, CI awal, struktur monorepo (FS-1)
-- [ ] Putuskan Express vs Hapi sesuai Checklist Main Quest (FS-1, FS-2)
+- [x] Repo, branch protection, CI awal, struktur monorepo (FS-1)
+- [x] Putuskan Express vs Hapi sesuai Checklist Main Quest (FS-1, FS-2)
 - [ ] Migrasi skema database sesuai `DATA_MODEL.md`, role `app_backend` & `forecast_job` (FS-1)
 - [ ] API CRUD menu + autentikasi admin, OpenAPI awal (FS-1)
 - [ ] Wireframe & halaman katalog dengan data contoh (FS-2)
