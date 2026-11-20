@@ -107,7 +107,25 @@ CREATE TABLE posting_time_stats (
 |---|---|---|
 | owner Supabase | migrasi (FS-1) | semua |
 | `app_backend` | backend Node.js | CRUD tabel inti; SELECT tabel hasil pipeline |
-| `forecast_job` | GitHub Actions (ml-pipeline) | SELECT `events`, `menus`; INSERT/UPDATE `forecast_runs`, `menu_forecast`, `posting_time_stats` |
+| `forecast_job` | GitHub Actions (ml-pipeline) | SELECT `events`, `menus`; SELECT/INSERT/UPDATE `forecast_runs`, `menu_forecast`, `posting_time_stats` |
+
+Catatan:
+
+- Role dan GRANT dibuat oleh `backend/migrations/002_roles.sql`. `app_backend` juga mendapat `USAGE` pada
+  sequence `events_id_seq`. Tidak ada role aplikasi yang boleh membaca `schema_migrations`.
+- `forecast_job` butuh SELECT pada tabel hasil pipeline karena `UPDATE ... WHERE`, `INSERT ... RETURNING`,
+  dan `ON CONFLICT DO UPDATE` membaca tabel yang sama. Tidak ada DELETE.
+- Di Supabase, hak tabel aplikasi dicabut dari role `anon` dan `authenticated` (Data API/PostgREST), sehingga
+  data hanya bisa diakses lewat backend.
+- **Koneksi role kustom lewat Supabase Session pooler** memakai username `<role>.<project-ref>`, bukan nama
+  role saja. Contoh: `app_backend.xxxx` dan `forecast_job.xxxx` (`xxxx` = project ref `djajan-dev` atau
+  `djajan-prod`). Format URL: `postgresql://app_backend.xxxx:<password>@<host-pooler>:5432/postgres`.
+  Koneksi langsung (bukan pooler) memakai nama role saja.
+
+## Tabel `schema_migrations`
+
+Dibuat dan diisi oleh `backend/scripts/migrate.js` (bukan bagian kontrak antar tim): `filename` (PK),
+`checksum` (SHA-256 isi file), `applied_at`.
 
 ## Konvensi UTM
 

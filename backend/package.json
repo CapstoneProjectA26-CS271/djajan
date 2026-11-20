@@ -6,7 +6,12 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "vitest run",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "migrate": "node scripts/migrate.js",
+    "migrate:status": "node scripts/migrate.js status",
+    "seed:admin": "node scripts/seed-admin.js",
+    "seed:menus": "node scripts/seed-menus.js",
+    "seed": "npm run seed:admin && npm run seed:menus"
   },
   "author": "",
   "license": "ISC",

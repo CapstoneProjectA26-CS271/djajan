@@ -6,13 +6,16 @@ import { env } from '../config/env.js';
 const SUPABASE_CA_PATH = new URL('../../certs/prod-ca-2021.crt', import.meta.url);
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
+export function isLocalDatabase(databaseUrl) {
+  return LOCAL_HOSTS.includes(new URL(databaseUrl).hostname);
+}
+
 /**
  * Local Docker Postgres has no TLS. Anything else (Supabase) must use TLS with full
  * certificate verification. Do not put `sslmode` in DATABASE_URL: pg lets it override this.
  */
 export function sslConfigFor(databaseUrl) {
-  const { hostname } = new URL(databaseUrl);
-  if (LOCAL_HOSTS.includes(hostname)) {
+  if (isLocalDatabase(databaseUrl)) {
     return false;
   }
   return { ca: readFileSync(SUPABASE_CA_PATH, 'utf8'), rejectUnauthorized: true };
