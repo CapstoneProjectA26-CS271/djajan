@@ -26,8 +26,7 @@ djajan/
 └── docker-compose.yml  PostgreSQL 16 untuk pengembangan lokal
 ```
 
-> Backend saat ini masih berupa server sementara (`node:http`) dengan endpoint `GET /health`.
-> Framework backend (Express/Hapi) akan ditetapkan di Minggu 1.
+> Framework backend: **Express**. Endpoint yang tersedia saat ini: `GET /health` dan `GET /health/db`.
 
 ## Prasyarat
 
@@ -97,6 +96,16 @@ di chat publik, issue, atau commit.
 
 > Data produksi dan pilot **hanya** ada di Supabase project `djajan-prod`. Jangan memakai `djajan-prod` untuk
 > pengembangan atau pengujian lokal.
+
+### Koneksi database
+
+- Supabase: pakai connection string **Session pooler** (port `5432`), bukan koneksi langsung.
+- Koneksi ke host selain `localhost` **wajib TLS** dengan verifikasi sertifikat penuh, memakai CA Supabase di
+  `backend/certs/prod-ca-2021.crt` (sertifikat publik, bukan secret). Ini diatur otomatis di
+  `backend/src/db/pool.js`.
+- **Jangan** menambahkan `?sslmode=` di `DATABASE_URL`: parameter itu menimpa konfigurasi TLS di kode.
+- Password dengan karakter khusus (`@ : / # ? %`) wajib di-URL-encode.
+- Cek koneksi: jalankan backend, lalu buka http://localhost:3000/health/db → `{"status":"ok"}`.
 
 ## Menjalankan
 
