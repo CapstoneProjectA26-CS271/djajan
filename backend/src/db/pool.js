@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
-import { env } from '../config/env.js';
+import { dbEnv } from '../config/dbEnv.js';
 
 // Supabase signs its server certificates with its own root CA (public, not a secret).
 const SUPABASE_CA_PATH = new URL('../../certs/prod-ca-2021.crt', import.meta.url);
@@ -23,8 +23,8 @@ export function sslConfigFor(databaseUrl) {
 
 // Use the Supabase pooler connection string in production (see docs/ARCHITECTURE.md).
 export const pool = new pg.Pool({
-  connectionString: env.DATABASE_URL,
-  ssl: sslConfigFor(env.DATABASE_URL),
+  connectionString: dbEnv.DATABASE_URL,
+  ssl: sslConfigFor(dbEnv.DATABASE_URL),
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
 });

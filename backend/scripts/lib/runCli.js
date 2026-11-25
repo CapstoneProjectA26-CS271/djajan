@@ -1,8 +1,8 @@
 import { pool } from '../../src/db/pool.js';
-import { env } from '../../src/config/env.js';
+import { dbEnv } from '../../src/config/dbEnv.js';
 
 /** Host and database name only: never print the connection string (it holds the password). */
-export function describeDatabase(databaseUrl = env.DATABASE_URL) {
+export function describeDatabase(databaseUrl = dbEnv.DATABASE_URL) {
   const url = new URL(databaseUrl);
   return `${url.hostname}:${url.port || 5432}${url.pathname}`;
 }

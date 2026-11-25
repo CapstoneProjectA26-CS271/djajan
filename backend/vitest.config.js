@@ -8,6 +8,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
       FRONTEND_URL: 'http://localhost:5173',
+      JWT_SECRET: 'test-secret-that-is-at-least-32-characters-long',
     },
   },
 });
