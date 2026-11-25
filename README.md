@@ -107,6 +107,45 @@ di chat publik, issue, atau commit.
 - Password dengan karakter khusus (`@ : / # ? %`) wajib di-URL-encode.
 - Cek koneksi: jalankan backend, lalu buka http://localhost:3000/health/db → `{"status":"ok"}`.
 
+## Database & migrasi
+
+Migrasi ada di `backend/migrations/` (`001_init_schema.sql`, `002_roles.sql`, ...) dan dijalankan oleh
+`backend/scripts/migrate.js` memakai `DATABASE_URL` di `backend/.env`. Jalankan semua perintah dari folder
+`backend/`:
+
+| Perintah | Fungsi |
+|---|---|
+| `npm run migrate:status` | Daftar migrasi: `sudah`, `BELUM`, `BERUBAH` (file lama diubah), `FILE HILANG` |
+| `npm run migrate` | Menjalankan migrasi yang belum jalan, berurutan, satu transaksi per file |
+| `npm run seed:admin` | Membuat 1 admin dari `ADMIN_EMAIL` & `ADMIN_PASSWORD` (bcrypt, minimal 12 karakter) |
+| `npm run seed:menus` | Mengisi 8 menu berlabel "[Data contoh]" (ditolak bila `NODE_ENV=production`) |
+| `npm run seed` | `seed:admin` lalu `seed:menus` |
+
+Semua perintah aman diulang: migrasi yang sudah tercatat di tabel `schema_migrations` dilewati, dan seed
+melewati email/slug yang sudah ada.
+
+Aturan migrasi:
+
+- Perubahan skema = **file baru** dengan nomor berikutnya (`003_...sql`), plus update `docs/DATA_MODEL.md`
+  di PR yang sama. **Jangan mengubah file yang sudah dijalankan**: runner menyimpan checksum tiap file dan
+  berhenti bila isinya berubah.
+- Password role `app_backend` dan `forecast_job` tidak ditulis di repo. Isi `APP_BACKEND_DB_PASSWORD` dan
+  `FORECAST_JOB_DB_PASSWORD` di `backend/.env` **sebelum** `002_roles.sql` dijalankan. Untuk database
+  non-lokal (Supabase) keduanya wajib: bila salah satu kosong, `npm run migrate` berhenti sebelum menjalankan
+  migrasi apa pun. Hanya untuk `localhost` boleh kosong; role dibuat tanpa password dengan peringatan.
+- Migrasi dijalankan sebagai user `postgres` (owner). Backend dan ml-pipeline memakai role masing-masing; lihat
+  [Hak akses database](docs/DATA_MODEL.md#hak-akses-database) untuk format username lewat Session pooler.
+
+Urutan dev → prod:
+
+1. **Lokal (Docker)**: `npm run migrate`, jalankan dua kali (kedua harus "Tidak ada migrasi baru"), lalu
+   `npm run seed` dan `npm test`.
+2. **`djajan-dev`**: ganti `DATABASE_URL` ke Session pooler `djajan-dev`, lalu `npm run migrate:status`,
+   `npm run migrate`, `npm run seed`.
+3. Cek `npm run migrate:status` (semua `sudah`) dan `GET /health/db` → `{"status":"ok"}`.
+4. **`djajan-prod`**: setelah PR di-merge ke `main`, **backup dulu**, lalu `npm run migrate` dan
+   `npm run seed:admin` dengan `NODE_ENV=production`. Jangan menjalankan `seed:menus` di produksi.
+
 ## Menjalankan
 
 | Bagian | Perintah | Alamat / hasil |
@@ -121,10 +160,14 @@ Perintah lain:
 ```bash
 cd frontend && npm run build        # build produksi ke frontend/dist
 cd frontend && npm run lint         # lint frontend (OxLint)
+cd backend && npm test             # test backend (vitest)
 cd ml-pipeline && python -m pytest  # test ml-pipeline (venv aktif)
 docker compose exec db psql -U djajan -d djajan   # masuk ke database lokal (opsi a)
 docker compose down                 # hentikan database (data tetap tersimpan di volume pgdata)
 ```
+
+> **Windows:** jalankan test backend (`cd backend && npm test`) dari **PowerShell** atau terminal VS Code.
+> Di Git Bash, vitest gagal memuat semua file test (`TypeError: Cannot read properties of undefined (reading 'config')`).
 
 Linter: frontend memakai [OxLint](https://oxc.rs/docs/guide/usage/linter). Backend nanti juga memakai OxLint
 agar aturan lint seragam.
