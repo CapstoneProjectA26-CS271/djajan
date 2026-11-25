@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand: #ff8c24;
+  --color-brand-dark: #8c2d0e;
+  --color-accent: #ffda45;
+  --color-surface: #fff9ee;
+  --color-ink: #412114;
+}
+
+body { @apply bg-surface text-ink; }
+.frame { @apply mx-auto max-w-6xl px-4 sm:px-8; }
+.hero { @apply bg-brand-dark text-white; background: radial-gradient(ellipse at 80% 55%, #c93422, #951b18 75%); }
+.hero-layout { @apply grid items-center gap-6 py-10 md:grid-cols-2 md:py-14; }
+.hero-action { @apply bg-accent text-ink hover:bg-orange-200; }
+.action { @apply inline-flex min-h-11 items-center rounded-full bg-brand-dark px-5 py-2 font-bold text-white hover:bg-ink; }
+.filter { @apply min-h-11 cursor-pointer rounded-full border border-brand-dark px-4 font-semibold; }
+.filter[aria-pressed="true"] { @apply bg-accent; }
+.menu-card { @apply block h-full rounded-xl border border-orange-200 bg-white p-4 sm:p-6; }
+:focus-visible { @apply outline-2 outline-offset-4 outline-ink; }

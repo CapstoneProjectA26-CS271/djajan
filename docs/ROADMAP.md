@@ -7,7 +7,7 @@ Sumber: Project Plan final. Progres harian dipantau di GitHub Projects.
 - [ ] Putuskan Express vs Hapi sesuai Checklist Main Quest (FS-1, FS-2)
 - [ ] Migrasi skema database sesuai `DATA_MODEL.md`, role `app_backend` & `forecast_job` (FS-1)
 - [ ] API CRUD menu + autentikasi admin, OpenAPI awal (FS-1)
-- [ ] Wireframe & halaman katalog dengan data contoh (FS-2)
+- [x] Wireframe & halaman katalog dengan data contoh (FS-2)
 - [ ] Prompt v1 brand voice + 20 kasus uji caption (AI-1, AI-2)
 - [ ] Skema event & generator data sintetis 60 hari (DS-1, DS-2)
 - [ ] Minta data menu lengkap, aset brand, dan contoh caption ke owner (FS-2, AI-1)
