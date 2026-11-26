@@ -1,0 +1,29 @@
+# Render Blueprint: backend staging. Langkah pakai di docs/DEPLOY.md.
+# Nilai rahasia (sync: false) diisi di dashboard Render saat Blueprint pertama kali dibuat, tidak di file ini.
+services:
+  - type: web
+    name: djajan-backend-staging
+    runtime: node
+    plan: free
+    # Sama dengan region Supabase (ap-southeast-1) supaya latensi query rendah.
+    region: singapore
+    rootDir: backend
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    # /health, bukan /health/db: gangguan database sesaat tidak boleh membuat Render mematikan instance.
+    healthCheckPath: /health
+    # Deploy hanya setelah CI (.github/workflows/ci.yml) hijau di commit tersebut.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Session pooler djajan-dev dengan user app_backend (bukan postgres/owner). Lihat docs/DATA_MODEL.md.
+      - key: DATABASE_URL
+        sync: false
+      # Dibuat acak oleh Render (base64, 256 bit) saat service dibuat; tidak pernah ditulis di repo.
+      - key: JWT_SECRET
+        generateValue: true
+      # Origin frontend, pisahkan dengan koma. Contoh: https://djajan.vercel.app,http://localhost:5173
+      - key: FRONTEND_URL
+        sync: false

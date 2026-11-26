@@ -29,15 +29,18 @@ function readServerVars(source, errors) {
     errors.push('PORT harus bilangan bulat 1–65535');
   }
 
-  let frontendUrl;
-  if (!source.FRONTEND_URL) {
+  // Comma-separated so staging can serve both the Vercel preview and FS-2's localhost.
+  const frontendOrigins = [];
+  const frontendValues = (source.FRONTEND_URL ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+  if (frontendValues.length === 0) {
     errors.push('FRONTEND_URL wajib diisi');
-  } else {
+  }
+  for (const value of frontendValues) {
     try {
       // CORS compares against the bare origin, so drop any path or trailing slash.
-      frontendUrl = new URL(source.FRONTEND_URL).origin;
+      frontendOrigins.push(new URL(value).origin);
     } catch {
-      errors.push('FRONTEND_URL harus berupa URL yang valid, contoh http://localhost:5173');
+      errors.push(`FRONTEND_URL berisi URL tidak valid ("${value}"), contoh http://localhost:5173`);
     }
   }
 
@@ -48,7 +51,7 @@ function readServerVars(source, errors) {
     errors.push(`JWT_SECRET minimal ${MIN_JWT_SECRET_LENGTH} karakter`);
   }
 
-  return { PORT: port, FRONTEND_URL: frontendUrl, JWT_SECRET: jwtSecret };
+  return { PORT: port, FRONTEND_ORIGINS: Object.freeze(frontendOrigins), JWT_SECRET: jwtSecret };
 }
 
 function throwIfInvalid(errors) {
