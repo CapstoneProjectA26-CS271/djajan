@@ -6,6 +6,7 @@ import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { menuRouter } from './routes/menus.js';
 import { adminMenuRouter } from './routes/adminMenus.js';
+import { adminUploadRouter } from './routes/adminUploads.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
@@ -27,6 +28,7 @@ app.use('/api/menus', menuRouter);
 // Everything under /api/admin needs a valid JWT, including paths that do not exist (no route probing).
 app.use('/api/admin', requireAuth);
 app.use('/api/admin/menus', adminMenuRouter);
+app.use('/api/admin/uploads', adminUploadRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

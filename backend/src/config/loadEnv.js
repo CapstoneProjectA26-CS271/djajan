@@ -51,6 +51,34 @@ function readServerVars(source, errors) {
   return { PORT: port, FRONTEND_URL: frontendUrl, JWT_SECRET: jwtSecret };
 }
 
+const DEFAULT_STORAGE_BUCKET = 'menu-images';
+
+/**
+ * Supabase Storage for menu photos. Returns null when not configured, which only development and
+ * test allow: there the upload endpoint answers 503 so FS-2/AI/DS can run the backend without keys.
+ */
+function readStorageVars(source, errors, { required }) {
+  const url = source.SUPABASE_URL?.trim();
+  const serviceKey = source.SUPABASE_SERVICE_KEY?.trim();
+  const bucket = source.SUPABASE_STORAGE_BUCKET?.trim() || DEFAULT_STORAGE_BUCKET;
+
+  if (!url && !serviceKey && !required) {
+    return null;
+  }
+  if (!url) {
+    errors.push('SUPABASE_URL wajib diisi (contoh https://<project-ref>.supabase.co)');
+  } else if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url)) {
+    errors.push('SUPABASE_URL harus berbentuk https://<project-ref>.supabase.co');
+  }
+  if (!serviceKey) {
+    errors.push('SUPABASE_SERVICE_KEY wajib diisi (secret key dari Supabase → Project Settings → API Keys)');
+  }
+  if (!/^[a-z0-9-]{3,63}$/.test(bucket)) {
+    errors.push('SUPABASE_STORAGE_BUCKET hanya boleh huruf kecil, angka, dan tanda minus');
+  }
+  return { url: url?.replace(/\/$/, ''), serviceKey, bucket };
+}
+
 function throwIfInvalid(errors) {
   if (errors.length > 0) {
     throw new Error(
@@ -68,12 +96,21 @@ export function loadDatabaseEnv(source) {
   return Object.freeze(vars);
 }
 
-/** Everything the HTTP server needs, database included. */
+/** Everything the HTTP server needs, database included. Storage is mandatory only in production. */
 export function loadServerEnv(source) {
   const errors = [];
   const vars = { ...readDatabaseVars(source, errors), ...readServerVars(source, errors) };
+  const storage = readStorageVars(source, errors, { required: vars.NODE_ENV === 'production' });
   throwIfInvalid(errors);
-  return Object.freeze(vars);
+  return Object.freeze({ ...vars, STORAGE: storage && Object.freeze(storage) });
+}
+
+/** For scripts/setup-storage.js: storage settings only, always required. */
+export function loadStorageEnv(source) {
+  const errors = [];
+  const storage = readStorageVars(source, errors, { required: true });
+  throwIfInvalid(errors);
+  return Object.freeze(storage);
 }
 
 /** Fails fast at boot: prints the problems without a stack trace and exits. */
