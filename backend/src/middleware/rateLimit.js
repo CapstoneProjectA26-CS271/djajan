@@ -24,6 +24,16 @@ export const loginLimiter = createRateLimiter({
   message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.',
 });
 
+// PATCH /api/auth/password: 5 failed attempts per admin -> 429 for 15 minutes. Keyed by admin id
+// (set by requireAuth, which must run first) so a stolen token cannot guess the current password.
+export const passwordChangeLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `admin:${req.admin.id}`,
+  message: 'Terlalu banyak percobaan ganti password. Coba lagi dalam 15 menit.',
+});
+
 // POST /api/events: a catalog visit sends a handful of events per minute.
 export const eventsLimiter = createRateLimiter({
   windowMs: 60 * 1000,

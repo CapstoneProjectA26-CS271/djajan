@@ -1,7 +1,7 @@
 // Usage: npm run seed:menus
 // Inserts sample menus for development. Idempotent: a slug that already exists is left unchanged.
 import { pool } from '../src/db/pool.js';
-import { env } from '../src/config/env.js';
+import { dbEnv } from '../src/config/dbEnv.js';
 import { runCli } from './lib/runCli.js';
 
 const SAMPLE_LABEL = '[Data contoh]';
@@ -75,7 +75,7 @@ const SAMPLE_MENUS = [
 ];
 
 await runCli(async () => {
-  if (env.NODE_ENV === 'production') {
+  if (dbEnv.NODE_ENV === 'production') {
     throw new Error('seed:menus hanya untuk pengembangan. Jangan isi data contoh ke database produksi.');
   }
 

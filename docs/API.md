@@ -17,8 +17,8 @@ Base URL: `/api`. Kontrak antar frontend, backend, dan tim Data/AI. Versi OpenAP
 |---|---|---|
 | GET | `/health` | `{ status: "ok" }` |
 | GET | `/health/db` | Cek koneksi database (`select 1`): `200 { status: "ok" }` atau `503 { status: "error", message }` |
-| GET | `/api/menus?category=` | Daftar menu tersedia (tidak termasuk yang dihapus) |
-| GET | `/api/menus/:slug` | Detail satu menu |
+| GET | `/api/menus?category=` | Daftar menu tersedia (tidak termasuk yang dihapus) → `{ menus: [...] }`, urut kategori lalu nama |
+| GET | `/api/menus/:slug` | Detail satu menu → `{ menu }`. Menu yang sedang habis tetap dikembalikan (`is_available: false`); yang dihapus → 404 |
 | POST | `/api/events` | Catat event pengunjung. Rate limit per IP + session |
 
 `POST /api/events` body:
@@ -32,24 +32,58 @@ Base URL: `/api`. Kontrak antar frontend, backend, dan tim Data/AI. Versi OpenAP
 ```
 Respons `201 { "status": "success" }`. Event dengan `event_type` tidak dikenal → 400.
 
+Field menu publik: `id, slug, name, category, price, description, image_url, is_available, updated_at`.
+`cost_price` **tidak pernah** dikirim ke endpoint publik. Filter `category` tidak peka huruf besar/kecil.
+
 ## Auth
 
 | Method | Path | Keterangan |
 |---|---|---|
 | POST | `/api/auth/login` | `{ email, password }` → `{ token }`. 5x gagal → 429 + jeda 15 menit |
-| GET | `/api/auth/me` | Data admin yang sedang login |
+| GET | `/api/auth/me` | Data admin yang sedang login → `{ admin: { id, email, created_at } }` |
+| PATCH | `/api/auth/password` | Ganti password (wajib JWT). Body `{ current_password, new_password }` → `{ "status": "success", "message": "Password berhasil diubah" }` |
+
+Login:
+- Email/password salah → `401 "Email atau password salah"` (pesan sama untuk email yang tidak terdaftar).
+- Dua lapis batas, keduanya → 429: per akun (5x password salah → akun dikunci 15 menit, disimpan di
+  `admins.locked_until`) dan per IP (5 percobaan gagal per 15 menit, lintas email).
+- Login sukses mengosongkan hitungan gagal akun.
+
+Ganti password:
+
+- `new_password` minimal 12 karakter, maksimal 72 byte (batas bcrypt), dan harus berbeda dari
+  `current_password`. Input tidak valid → 400.
+- `current_password` salah → **400** `"Password lama salah"`, bukan 401, supaya frontend tidak me-logout owner.
+- 5 percobaan gagal per akun (bukan per IP) dalam 15 menit → 429.
+- Sukses juga membuka kunci login akun. Token lama **tetap berlaku** sampai kedaluwarsa (8 jam), karena belum
+  ada pencabutan token.
+
+Token tidak ada / tidak valid / kedaluwarsa → 401. Saat 401 di rute admin, frontend menghapus token dan
+mengarahkan ke halaman login. Semua path di bawah `/api/admin/` membalas 401 tanpa token, termasuk path yang
+tidak ada.
 
 ## Admin – Menu
 
 | Method | Path | Keterangan |
 |---|---|---|
-| GET | `/api/admin/menus` | Semua menu (termasuk tidak tersedia) |
-| POST | `/api/admin/menus` | Buat menu. Body: `name, category, price, description?, image_url?, cost_price?, is_available?` |
-| PUT | `/api/admin/menus/:id` | Ubah menu |
-| DELETE | `/api/admin/menus/:id` | Soft delete |
+| GET | `/api/admin/menus` | Semua menu (termasuk tidak tersedia) → `{ menus: [...] }` |
+| GET | `/api/admin/menus/:id` | Detail satu menu untuk form edit → `{ menu }` |
+| POST | `/api/admin/menus` | Buat menu → `201 { menu }`. Body: `name, category, price, description?, image_url?, cost_price?, is_available?` |
+| PUT | `/api/admin/menus/:id` | Ubah menu → `{ menu }`. Body: **hanya field yang diubah** (minimal satu); `null` mengosongkan field opsional |
+| DELETE | `/api/admin/menus/:id` | Soft delete → `{ id }` |
 | POST | `/api/admin/uploads` | `multipart/form-data` field `image`; jpg/png/webp; ≤ 2 MB → `{ url }` |
 
 Validasi: `name` 1–100 karakter, `price` integer > 0, `description` ≤ 500 karakter. Slug dibuat backend.
+Rinciannya:
+
+- `price` dan `cost_price` harus **number** integer (bukan string `"25000"`), maksimal 10.000.000; `cost_price` ≥ 0.
+- `category` 1–50 karakter, disimpan huruf kecil. `image_url` harus `http://` / `https://`.
+- Teks di-trim; `description`/`image_url` kosong disimpan `null`. `is_available` boolean, default `true`.
+- Field tak dikenal diabaikan, termasuk `slug` dari klien.
+- Slug dibuat dari nama saat menu dibuat dan **tidak berubah** walau nama diganti (dipakai di tautan &
+  `utm_campaign`). Slug yang sudah dipakai, termasuk oleh menu terhapus, diberi akhiran `-2`, `-3`, ….
+- `cost_price` hanya muncul di respons admin.
+- `:id` bukan UUID atau menu sudah dihapus → 404 `"Menu tidak ditemukan"`.
 
 ## Admin – AI
 

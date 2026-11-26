@@ -1,7 +1,7 @@
 // Usage: npm run migrate          -> apply pending migrations in backend/migrations/
 //        npm run migrate:status   -> show which migrations are applied, pending, or changed
 import { fileURLToPath } from 'node:url';
-import { env } from '../src/config/env.js';
+import { dbEnv } from '../src/config/dbEnv.js';
 import { isLocalDatabase, pool } from '../src/db/pool.js';
 import { runCli } from './lib/runCli.js';
 import {
@@ -37,14 +37,14 @@ await runCli(async () => {
       await printStatus(client, migrations);
       return;
     }
-    // CLI-only values, so they are read here instead of in src/config/env.js.
+    // CLI-only values, so they are read here instead of in src/config/loadEnv.js.
     const values = Object.fromEntries(SQL_PLACEHOLDER_ENV.map((name) => [name, process.env[name]]));
     // Role passwords may only be empty on localhost; Supabase roles must be able to log in.
     await runMigrations({
       client,
       migrations,
       values,
-      allowMissingValues: isLocalDatabase(env.DATABASE_URL),
+      allowMissingValues: isLocalDatabase(dbEnv.DATABASE_URL),
     });
   } finally {
     client.release();
