@@ -21,6 +21,9 @@ Konfigurasi ada di `render.yaml` (Blueprint) di root repo.
      backend memakai `backend/certs/prod-ca-2021.crt`.
    - `FRONTEND_URL`: origin frontend, dipisah koma. Selama frontend belum di-deploy cukup
      `http://localhost:5173`; tambahkan URL Vercel setelah frontend online.
+   - `SUPABASE_URL` (`https://<project-ref>.supabase.co`) dan `SUPABASE_SERVICE_KEY` (secret key dari
+     Project Settings → API Keys): untuk upload foto menu. Wajib karena staging memakai `NODE_ENV=production`;
+     tanpa keduanya server gagal start. Jalankan `npm run storage:setup` sekali dari lokal untuk membuat bucket.
    - `JWT_SECRET` dibuat otomatis oleh Render.
 3. **Apply**. Setelah deploy pertama selesai, cek:
    - `https://<service>.onrender.com/health` → `{"status":"ok"}`

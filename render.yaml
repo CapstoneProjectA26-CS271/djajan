@@ -27,3 +27,11 @@ services:
       # Origin frontend, pisahkan dengan koma. Contoh: https://djajan.vercel.app,http://localhost:5173
       - key: FRONTEND_URL
         sync: false
+      # Supabase Storage untuk foto menu (wajib saat NODE_ENV=production). URL: https://<project-ref>.supabase.co
+      - key: SUPABASE_URL
+        sync: false
+      # Secret key (Project Settings → API Keys). Rahasia: hanya di backend.
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: menu-images
