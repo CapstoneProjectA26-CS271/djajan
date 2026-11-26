@@ -129,9 +129,10 @@ Aturan migrasi:
 - Perubahan skema = **file baru** dengan nomor berikutnya (`003_...sql`), plus update `docs/DATA_MODEL.md`
   di PR yang sama. **Jangan mengubah file yang sudah dijalankan**: runner menyimpan checksum tiap file dan
   berhenti bila isinya berubah.
-- Password role `app_backend` dan `forecast_job` tidak ditulis di repo. Isi `APP_BACKEND_DB_PASSWORD` dan
-  `FORECAST_JOB_DB_PASSWORD` di `backend/.env` **sebelum** `002_roles.sql` dijalankan. Untuk database
-  non-lokal (Supabase) keduanya wajib: bila salah satu kosong, `npm run migrate` berhenti sebelum menjalankan
+- Password role `app_backend`, `forecast_job`, dan `synthetic_loader` tidak ditulis di repo. Isi
+  `APP_BACKEND_DB_PASSWORD`, `FORECAST_JOB_DB_PASSWORD`, dan `SYNTHETIC_LOADER_DB_PASSWORD` di `backend/.env`
+  **sebelum** migrasi yang membuat role tersebut dijalankan (`002_roles.sql`, `003_synthetic_loader.sql`). Untuk database
+  non-lokal (Supabase) semuanya wajib: bila ada yang kosong, `npm run migrate` berhenti sebelum menjalankan
   migrasi apa pun. Hanya untuk `localhost` boleh kosong; role dibuat tanpa password dengan peringatan.
 - Migrasi dijalankan sebagai user `postgres` (owner). Backend dan ml-pipeline memakai role masing-masing; lihat
   [Hak akses database](docs/DATA_MODEL.md#hak-akses-database) untuk format username lewat Session pooler.

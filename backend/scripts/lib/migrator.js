@@ -6,7 +6,11 @@ import pg from 'pg';
 export const MIGRATION_FILE_PATTERN = /^\d{3}_[a-z0-9_]+\.sql$/;
 
 // Only these env vars may be injected into migration SQL; anything else (e.g. DATABASE_URL) is rejected.
-export const SQL_PLACEHOLDER_ENV = ['APP_BACKEND_DB_PASSWORD', 'FORECAST_JOB_DB_PASSWORD'];
+export const SQL_PLACEHOLDER_ENV = [
+  'APP_BACKEND_DB_PASSWORD',
+  'FORECAST_JOB_DB_PASSWORD',
+  'SYNTHETIC_LOADER_DB_PASSWORD',
+];
 
 const PLACEHOLDER_PATTERN = /\{\{([A-Z0-9_]+)\}\}/g;
 // Arbitrary constant so two runners against the same database never apply migrations concurrently.
