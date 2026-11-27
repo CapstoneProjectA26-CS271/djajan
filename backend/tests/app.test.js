@@ -50,11 +50,14 @@ describe('GET /health/db', () => {
 });
 
 describe('CORS', () => {
-  it('allows FRONTEND_URL', async () => {
-    const res = await request(app).get('/health').set('Origin', 'http://localhost:5173');
+  it.each(['http://localhost:5173', 'https://djajan-test.vercel.app'])(
+    'allows every origin listed in FRONTEND_URL: %s',
+    async (origin) => {
+      const res = await request(app).get('/health').set('Origin', origin);
 
-    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
-  });
+      expect(res.headers['access-control-allow-origin']).toBe(origin);
+    },
+  );
 
   it('does not allow other origins', async () => {
     const res = await request(app).get('/health').set('Origin', 'https://evil.example');

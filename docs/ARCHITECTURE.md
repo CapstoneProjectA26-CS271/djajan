@@ -38,11 +38,11 @@
 Framework backend sudah diputuskan: **Express 5** (Node.js, ESM). Susunan `backend/src/`:
 
 - `app.js` membuat & mengekspor app (tanpa `listen`, dipakai test via supertest); `server.js` menjalankan `listen`.
-- `config/env.js` membaca & memvalidasi env wajib (`DATABASE_URL`, `FRONTEND_URL`); server gagal start dengan pesan jelas bila ada yang kurang.
+- `config/env.js` membaca & memvalidasi env wajib (`DATABASE_URL`, `FRONTEND_URL`, `JWT_SECRET`); server gagal start dengan pesan jelas bila ada yang kurang.
 - Alur request: `routes/` → `validators/` → `services/` (logika, termasuk `ai/`) → `repositories/` (SQL parameterized) → `db/pool.js` (pg Pool).
 - Koneksi ke Supabase memakai TLS dengan verifikasi sertifikat penuh (CA `backend/certs/prod-ca-2021.crt`);
   database lokal (`localhost`) tanpa TLS.
-- `middleware/`: helmet, CORS hanya untuk `FRONTEND_URL`, `express.json` (batas 100 kb), rate limiter siap pakai
+- `middleware/`: helmet, CORS hanya untuk origin di `FRONTEND_URL` (boleh beberapa, dipisah koma), `express.json` (batas 100 kb), rate limiter siap pakai
   (login, `/api/events`, AI), handler 404, dan error handler terpusat berformat `success`/`fail`/`error` tanpa stack trace.
 - Di production `trust proxy` = 1 (Render berada di belakang satu proxy) agar IP klien untuk rate limit benar.
 - Health check: `GET /health` (proses hidup) dan `GET /health/db` (`select 1` ke database).
@@ -99,7 +99,7 @@ Backend menyediakan endpoint agregat (`/api/admin/analytics/*`). Semua query dih
 | Komponen | Target | Catatan |
 |---|---|---|
 | frontend | Vercel | env `VITE_API_URL`, `VITE_WA_NUMBER`, `VITE_SITE_URL` |
-| backend | Render (web service) | free tier bisa tidur → health check & pemanasan sebelum demo |
+| backend | Render (web service, `render.yaml`) | free tier bisa tidur → health check & pemanasan sebelum demo. Langkah di `DEPLOY.md` |
 | database & storage | Supabase | pakai connection string pooler; backup sebelum pilot |
 | ml-pipeline | GitHub Actions | secret `FORECAST_DB_URL` (user DB terbatas) |
 
