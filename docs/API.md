@@ -9,7 +9,7 @@ Base URL: `/api`. Kontrak antar frontend, backend, dan tim Data/AI. Versi OpenAP
 - Gagal validasi / bisnis (4xx): `{ "status": "fail", "message": "Pesan dalam Bahasa Indonesia" }`
 - Error server (5xx): `{ "status": "error", "message": "Terjadi kesalahan pada server" }` (tanpa detail internal)
 - Auth admin: header `Authorization: Bearer <JWT>`; masa berlaku token 8 jam.
-- Kode status: 200, 201, 400 (validasi), 401 (belum login), 403, 404, 413 (file terlalu besar), 429 (rate limit), 500, 503 (layanan AI tidak tersedia).
+- Kode status: 200, 201, 400 (validasi), 401 (belum login), 403, 404, 413 (file terlalu besar), 429 (rate limit), 500, 503 (layanan pendukung tidak tersedia: AI, penyimpanan foto, database).
 
 ## Publik
 
@@ -71,7 +71,7 @@ tidak ada.
 | POST | `/api/admin/menus` | Buat menu → `201 { menu }`. Body: `name, category, price, description?, image_url?, cost_price?, is_available?` |
 | PUT | `/api/admin/menus/:id` | Ubah menu → `{ menu }`. Body: **hanya field yang diubah** (minimal satu); `null` mengosongkan field opsional |
 | DELETE | `/api/admin/menus/:id` | Soft delete → `{ id }` |
-| POST | `/api/admin/uploads` | `multipart/form-data` field `image`; jpg/png/webp; ≤ 2 MB → `{ url }` |
+| POST | `/api/admin/uploads` | `multipart/form-data` field `image`; jpg/png/webp; ≤ 2 MB → `201 { url }` |
 
 Validasi: `name` 1–100 karakter, `price` integer > 0, `description` ≤ 500 karakter. Slug dibuat backend.
 Rinciannya:
@@ -84,6 +84,15 @@ Rinciannya:
   `utm_campaign`). Slug yang sudah dipakai, termasuk oleh menu terhapus, diberi akhiran `-2`, `-3`, ….
 - `cost_price` hanya muncul di respons admin.
 - `:id` bukan UUID atau menu sudah dihapus → 404 `"Menu tidak ditemukan"`.
+
+Upload foto (`POST /api/admin/uploads`):
+
+- Tepat satu file di field `image`, tanpa field lain. Jenis file dicek dari **isi** file (JPG/PNG/WEBP), bukan dari
+  nama atau `Content-Type` → selain itu 400 `"Format foto harus JPG, PNG, atau WEBP"`.
+- Lebih dari 2 MB → 413 `"Ukuran foto maksimal 2 MB"`. 30 unggahan per admin per 10 menit → 429.
+- `url` adalah URL publik Supabase Storage; kirim sebagai `image_url` saat `POST`/`PUT /api/admin/menus`.
+- Penyimpanan belum dikonfigurasi atau Supabase gagal → 503 `{ "status": "error" }`.
+- Foto yang diunggah tapi tidak jadi dipakai menu tetap tersimpan (belum ada pembersihan otomatis).
 
 ## Admin – AI
 

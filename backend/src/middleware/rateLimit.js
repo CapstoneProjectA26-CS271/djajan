@@ -34,6 +34,15 @@ export const passwordChangeLimiter = createRateLimiter({
   message: 'Terlalu banyak percobaan ganti password. Coba lagi dalam 15 menit.',
 });
 
+// POST /api/admin/uploads: generous for a real owner, but caps storage abuse with a stolen token.
+// Keyed by admin id, so requireAuth must run first.
+export const uploadLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  keyGenerator: (req) => `admin:${req.admin.id}`,
+  message: 'Terlalu banyak unggahan foto. Coba lagi dalam 10 menit.',
+});
+
 // POST /api/events: a catalog visit sends a handful of events per minute.
 export const eventsLimiter = createRateLimiter({
   windowMs: 60 * 1000,

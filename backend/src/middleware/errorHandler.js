@@ -1,4 +1,4 @@
-import { ClientError } from '../utils/errors.js';
+import { ClientError, ServiceUnavailableError } from '../utils/errors.js';
 
 // body-parser error types -> Indonesian messages (its own messages are English).
 const BODY_PARSER_MESSAGES = {
@@ -21,6 +21,12 @@ export function errorHandler(err, req, res, next) {
 
   if (err instanceof ClientError) {
     res.status(err.statusCode).json({ status: 'fail', message: err.message });
+    return;
+  }
+
+  if (err instanceof ServiceUnavailableError) {
+    console.error(err.cause ?? err);
+    res.status(503).json({ status: 'error', message: err.message });
     return;
   }
 

@@ -1,0 +1,489 @@
+openapi: 3.1.0
+info:
+  title: Djajan API
+  version: 0.1.0
+  description: |
+    REST API backend Djajan (katalog digital + panel admin). Harus konsisten dengan `docs/API.md`, yang tetap
+    menjadi sumber kebenaran kontrak antar tim. File ini hanya memuat endpoint yang **sudah** diimplementasikan;
+    events, AI, dan analytics ditambahkan di PR masing-masing.
+
+    Format respons:
+    - sukses: `{ "status": "success", "data": { ... } }`
+    - gagal (4xx): `{ "status": "fail", "message": "..." }`
+    - error server (5xx): `{ "status": "error", "message": "..." }`
+servers:
+  - url: http://localhost:3000
+    description: Lokal
+tags:
+  - name: health
+  - name: auth
+  - name: menu-publik
+  - name: admin-menu
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Proses server hidup
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthOk' }
+
+  /health/db:
+    get:
+      tags: [health]
+      summary: Koneksi database (`select 1`)
+      operationId: getHealthDb
+      security: []
+      responses:
+        '200':
+          description: Database bisa dihubungi
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthOk' }
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Login admin
+      description: |
+        Email/password salah → 401 dengan pesan yang sama untuk email tidak terdaftar.
+        429 bila akun terkunci (5 password salah → 15 menit) atau batas per IP (5 gagal / 15 menit) tercapai.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                password: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        '200':
+          description: Token JWT, berlaku 8 jam
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [token]
+                        properties:
+                          token: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Admin yang sedang login
+      operationId: getMe
+      responses:
+        '200':
+          description: Data admin
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [admin]
+                        properties:
+                          admin: { $ref: '#/components/schemas/Admin' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/auth/password:
+    patch:
+      tags: [auth]
+      summary: Ganti password admin
+      description: |
+        Password lama salah → **400** (bukan 401, supaya frontend tidak me-logout owner).
+        5 percobaan gagal per akun dalam 15 menit → 429. Token lama tetap berlaku sampai kedaluwarsa.
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string, minLength: 1, maxLength: 128 }
+                new_password:
+                  type: string
+                  minLength: 12
+                  description: Minimal 12 karakter, maksimal 72 byte UTF-8, berbeda dari password lama.
+      responses:
+        '200':
+          description: Password diganti
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, message]
+                properties:
+                  status: { const: success }
+                  message: { type: string, examples: ['Password berhasil diubah'] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/menus:
+    get:
+      tags: [menu-publik]
+      summary: Daftar menu tersedia
+      description: Tidak termasuk menu yang dihapus atau sedang habis. Urut kategori lalu nama.
+      operationId: listPublicMenus
+      security: []
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: Filter kategori, tidak peka huruf besar/kecil. Maksimal 50 karakter, satu nilai.
+          schema: { type: string, maxLength: 50 }
+      responses:
+        '200':
+          description: Daftar menu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [menus]
+                        properties:
+                          menus:
+                            type: array
+                            items: { $ref: '#/components/schemas/PublicMenu' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/menus/{slug}:
+    get:
+      tags: [menu-publik]
+      summary: Detail satu menu
+      description: Menu yang sedang habis tetap dikembalikan (`is_available = false`); yang dihapus → 404.
+      operationId: getPublicMenu
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 100 }
+      responses:
+        '200':
+          description: Menu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicMenuResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/menus:
+    get:
+      tags: [admin-menu]
+      summary: Semua menu (termasuk yang habis)
+      operationId: listAdminMenus
+      responses:
+        '200':
+          description: Daftar menu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [menus]
+                        properties:
+                          menus:
+                            type: array
+                            items: { $ref: '#/components/schemas/AdminMenu' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [admin-menu]
+      summary: Buat menu
+      description: Slug dibuat dari nama dan tidak berubah. Slug yang sudah dipakai diberi akhiran `-2`, `-3`, ….
+      operationId: createMenu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MenuCreate' }
+      responses:
+        '201':
+          description: Menu dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMenuResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: Slug dari nama ini sudah terpakai terlalu banyak kali
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Fail' }
+
+  /api/admin/menus/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: UUID menu. Bukan UUID → 404.
+        schema: { type: string, format: uuid }
+    get:
+      tags: [admin-menu]
+      summary: Detail menu untuk form edit
+      operationId: getAdminMenu
+      responses:
+        '200':
+          description: Menu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMenuResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [admin-menu]
+      summary: Ubah menu (sebagian)
+      description: Hanya field yang dikirim yang diubah (minimal satu). `null` mengosongkan field opsional.
+      operationId: updateMenu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MenuUpdate' }
+      responses:
+        '200':
+          description: Menu diubah
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMenuResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [admin-menu]
+      summary: Hapus menu (soft delete)
+      operationId: deleteMenu
+      responses:
+        '200':
+          description: Menu dihapus
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [id]
+                        properties:
+                          id: { type: string, format: uuid }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/uploads:
+    post:
+      tags: [admin-menu]
+      summary: Unggah foto menu
+      description: |
+        Satu file di field `image`; JPG, PNG, atau WEBP (dicek dari isi file, bukan nama/Content-Type);
+        maksimal 2 MB. URL publik hasilnya dipakai sebagai `image_url` saat membuat/mengubah menu.
+        30 unggahan per admin per 10 menit.
+      operationId: uploadMenuImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: { type: string, contentMediaType: application/octet-stream }
+      responses:
+        '201':
+          description: Foto tersimpan
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [url]
+                        properties:
+                          url: { type: string, format: uri }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: File lebih dari 2 MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Fail' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Input tidak valid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Fail' }
+    Unauthorized:
+      description: Belum login, token tidak valid, atau kedaluwarsa. Frontend menghapus token dan ke halaman login.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Fail' }
+    NotFound:
+      description: Tidak ditemukan
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Fail' }
+    TooManyRequests:
+      description: Batas percobaan tercapai
+      headers:
+        RateLimit:
+          description: Sisa kuota (draft IETF RateLimit header, versi 8)
+          schema: { type: string }
+        Retry-After:
+          description: Detik sampai boleh mencoba lagi
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Fail' }
+    ServiceUnavailable:
+      description: Layanan pendukung (database / penyimpanan foto) tidak tersedia
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    HealthOk:
+      type: object
+      required: [status]
+      properties:
+        status: { const: ok }
+    Success:
+      type: object
+      required: [status, data]
+      properties:
+        status: { const: success }
+        data: { type: object }
+    Fail:
+      type: object
+      required: [status, message]
+      properties:
+        status: { const: fail }
+        message: { type: string, description: Pesan dalam Bahasa Indonesia }
+    Error:
+      type: object
+      required: [status, message]
+      properties:
+        status: { const: error }
+        message: { type: string }
+    Admin:
+      type: object
+      required: [id, email, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        created_at: { type: string, format: date-time }
+    PublicMenu:
+      type: object
+      description: Tidak pernah memuat `cost_price`.
+      required: [id, slug, name, category, price, description, image_url, is_available, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        category: { type: string, description: Huruf kecil }
+        price: { type: integer, minimum: 1, description: Rupiah, mis. 25000 }
+        description: { type: [string, 'null'], maxLength: 500 }
+        image_url: { type: [string, 'null'], format: uri }
+        is_available: { type: boolean }
+        updated_at: { type: string, format: date-time }
+    AdminMenu:
+      allOf:
+        - $ref: '#/components/schemas/PublicMenu'
+        - type: object
+          required: [cost_price, created_at]
+          properties:
+            cost_price: { type: [integer, 'null'], minimum: 0 }
+            created_at: { type: string, format: date-time }
+    PublicMenuResponse:
+      allOf:
+        - $ref: '#/components/schemas/Success'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [menu]
+              properties:
+                menu: { $ref: '#/components/schemas/PublicMenu' }
+    AdminMenuResponse:
+      allOf:
+        - $ref: '#/components/schemas/Success'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [menu]
+              properties:
+                menu: { $ref: '#/components/schemas/AdminMenu' }
+    MenuFields:
+      type: object
+      description: Field tak dikenal (termasuk `slug`) diabaikan. Teks di-trim; deskripsi/URL kosong disimpan null.
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        category: { type: string, minLength: 1, maxLength: 50, description: Disimpan huruf kecil }
+        price: { type: integer, minimum: 1, maximum: 10000000, description: Number, bukan string }
+        cost_price: { type: [integer, 'null'], minimum: 0, maximum: 10000000 }
+        description: { type: [string, 'null'], maxLength: 500 }
+        image_url: { type: [string, 'null'], format: uri, maxLength: 2048, description: http:// atau https:// }
+        is_available: { type: boolean }
+    MenuCreate:
+      allOf:
+        - $ref: '#/components/schemas/MenuFields'
+        - type: object
+          required: [name, category, price]
+          properties:
+            is_available: { default: true }
+    MenuUpdate:
+      allOf:
+        - $ref: '#/components/schemas/MenuFields'
+        - type: object
+          minProperties: 1
+
+security:
+  - bearerAuth: []

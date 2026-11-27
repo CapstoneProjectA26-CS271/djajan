@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadDatabaseEnv, loadServerEnv } from '../src/config/loadEnv.js';
+import { loadDatabaseEnv, loadServerEnv, loadStorageEnv } from '../src/config/loadEnv.js';
 
 const databaseVars = {
   DATABASE_URL: 'postgresql://djajan:djajan@localhost:5433/djajan',
@@ -62,6 +62,49 @@ describe('loadServerEnv', () => {
     expect(() => loadServerEnv({ ...serverVars, JWT_SECRET: 'x'.repeat(31) })).toThrow(
       /JWT_SECRET minimal 32 karakter/,
     );
+  });
+});
+
+describe('storage settings', () => {
+  const storageVars = {
+    SUPABASE_URL: 'https://abcdefgh.supabase.co/',
+    SUPABASE_SERVICE_KEY: 'sb_secret_x',
+  };
+
+  it('are optional outside production (upload then answers 503)', () => {
+    expect(loadServerEnv(serverVars).STORAGE).toBeNull();
+  });
+
+  it('are required in production', () => {
+    expect(() => loadServerEnv({ ...serverVars, NODE_ENV: 'production' })).toThrow(
+      /SUPABASE_URL wajib diisi[\s\S]*SUPABASE_SERVICE_KEY wajib diisi/,
+    );
+  });
+
+  it('default the bucket and drop the trailing slash', () => {
+    expect(loadServerEnv({ ...serverVars, ...storageVars }).STORAGE).toEqual({
+      url: 'https://abcdefgh.supabase.co',
+      serviceKey: 'sb_secret_x',
+      bucket: 'menu-images',
+    });
+  });
+
+  it('reject half a configuration', () => {
+    expect(() => loadServerEnv({ ...serverVars, SUPABASE_URL: storageVars.SUPABASE_URL })).toThrow(
+      /SUPABASE_SERVICE_KEY wajib diisi/,
+    );
+  });
+
+  it.each([
+    ['a non-Supabase URL', { SUPABASE_URL: 'https://evil.example' }, /SUPABASE_URL harus berbentuk/],
+    ['an http URL', { SUPABASE_URL: 'http://abcdefgh.supabase.co' }, /SUPABASE_URL harus berbentuk/],
+    ['an invalid bucket name', { SUPABASE_STORAGE_BUCKET: 'Menu Images' }, /SUPABASE_STORAGE_BUCKET/],
+  ])('reject %s', (_case, override, message) => {
+    expect(() => loadStorageEnv({ ...storageVars, ...override })).toThrow(message);
+  });
+
+  it('loadStorageEnv needs no database or server variables', () => {
+    expect(loadStorageEnv(storageVars).bucket).toBe('menu-images');
   });
 });
 

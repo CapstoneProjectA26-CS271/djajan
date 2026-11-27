@@ -16,6 +16,7 @@ vi.mock('../src/repositories/adminRepository.js', () => ({
 vi.mock('../src/middleware/rateLimit.js', () => ({
   loginLimiter: (req, res, next) => next(),
   passwordChangeLimiter: (req, res, next) => next(),
+  uploadLimiter: (req, res, next) => next(),
 }));
 
 const { app } = await import('../src/app.js');
