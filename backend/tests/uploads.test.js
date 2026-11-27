@@ -63,6 +63,14 @@ describe('POST /api/admin/uploads', () => {
     expect(uploadMenuImage).not.toHaveBeenCalled();
   });
 
+  it('accepts a file of exactly 2 MiB', async () => {
+    const exact = Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024 - PNG.length)]);
+
+    const res = await upload().attach('image', exact, 'pas.png');
+
+    expect(res.status).toBe(201);
+  });
+
   it('returns 413 for a file over 2 MB', async () => {
     const big = Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024)]);
 
