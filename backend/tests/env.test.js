@@ -24,11 +24,26 @@ describe('loadServerEnv', () => {
   it('normalizes FRONTEND_URL to its origin', () => {
     const env = loadServerEnv({ ...serverVars, FRONTEND_URL: 'https://djajan.vercel.app/' });
 
-    expect(env.FRONTEND_URL).toBe('https://djajan.vercel.app');
+    expect(env.FRONTEND_ORIGINS).toEqual(['https://djajan.vercel.app']);
+  });
+
+  it('accepts several comma-separated origins', () => {
+    const env = loadServerEnv({
+      ...serverVars,
+      FRONTEND_URL: 'https://djajan.vercel.app, http://localhost:5173/ ,',
+    });
+
+    expect(env.FRONTEND_ORIGINS).toEqual(['https://djajan.vercel.app', 'http://localhost:5173']);
+  });
+
+  it('names the invalid entry in a FRONTEND_URL list', () => {
+    expect(() =>
+      loadServerEnv({ ...serverVars, FRONTEND_URL: 'https://djajan.vercel.app,localhost' }),
+    ).toThrow(/FRONTEND_URL berisi URL tidak valid \("localhost"\)/);
   });
 
   it('lists every missing required variable in one error', () => {
-    expect(() => loadServerEnv({})).toThrow(
+    expect(() => loadServerEnv({ FRONTEND_URL: ' , ' })).toThrow(
       /DATABASE_URL wajib diisi[\s\S]*FRONTEND_URL wajib diisi[\s\S]*JWT_SECRET wajib diisi/,
     );
   });
@@ -39,7 +54,7 @@ describe('loadServerEnv', () => {
 
   it('rejects an invalid FRONTEND_URL', () => {
     expect(() => loadServerEnv({ ...serverVars, FRONTEND_URL: 'localhost' })).toThrow(
-      /FRONTEND_URL harus berupa URL/,
+      /FRONTEND_URL berisi URL tidak valid/,
     );
   });
 
