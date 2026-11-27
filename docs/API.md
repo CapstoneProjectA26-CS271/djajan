@@ -105,9 +105,11 @@ Upload foto (`POST /api/admin/uploads`):
 
 `POST /api/admin/ai/captions` body:
 ```json
-{ "menu_id": "uuid", "channel": "instagram", "style": "fomo", "promo_price": 20000, "extra_note": "promo akhir pekan" }
+{ "menu_id": "uuid", "channel": "instagram", "style": "promo", "promo_price": 20000, "extra_note": "promo akhir pekan" }
 ```
-`extra_note` ≤ 200 karakter (diperlakukan sebagai data, bukan instruksi). Respons:
+`extra_note` ≤ 200 karakter (diperlakukan sebagai data, bukan instruksi). `style` opsional: `promo` | `soft_selling` |
+`interaksi`; tanpa `style` ketiga varian memakai ketiga gaya itu. Caption hanya boleh menyebut penawaran (gratis, diskon,
+promo X%, beli 1 gratis 1, dst.) bila `promo_price` diisi; aturannya di `docs/AI_SPEC.md`. Respons:
 ```json
 {
   "status": "success",
@@ -115,7 +117,7 @@ Upload foto (`POST /api/admin/uploads`):
     "group_id": "uuid",
     "provider": "gemini",
     "variants": [
-      { "id": "uuid", "variant": "a", "style": "fomo", "content": "…Rp20.000…", "utm_url": "https://…?utm_source=instagram…&utm_content=3f9a1c2e-a" }
+      { "id": "uuid", "variant": "a", "style": "promo", "content": "…Rp20.000…", "utm_url": "https://…?utm_source=instagram…&utm_content=3f9a1c2e-a" }
     ]
   }
 }

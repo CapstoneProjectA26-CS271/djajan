@@ -1,101 +1,60 @@
 // Usage: npm run seed:menus
-// Inserts sample menus for development. Idempotent: a slug that already exists is left unchanged.
+// Inserts the official DJAJAN menus into a development database. Idempotent: an existing slug is left unchanged.
 import { pool } from '../src/db/pool.js';
 import { dbEnv } from '../src/config/dbEnv.js';
 import { runCli } from './lib/runCli.js';
 
-const SAMPLE_LABEL = '[Data contoh]';
-
-// Sample data only: names and prices are placeholders until the owner sends the real menu.
-const SAMPLE_MENUS = [
+// Data menu resmi dari owner DJAJAN (Nov 2026). Menu lain masih dalam pengembangan owner; tambahkan di sini
+// atau lewat panel admin saat sudah siap. cost_price belum diberikan owner, jadi dibiarkan null.
+const MENUS = [
   {
-    slug: 'dimsum-mentai',
-    name: 'Dimsum Mentai',
-    category: 'makanan',
+    slug: 'classic-mac',
+    name: 'Classic Mac',
+    category: 'mac & cheese',
+    price: 15000,
+    description:
+      'Mac & cheese dengan saus keju creamy dan macaroni, cocok untuk pencinta keju yang ingin menikmati menu simpel dan nikmat.',
+  },
+  {
+    slug: 'royale-mac',
+    name: 'Royale Mac',
+    category: 'mac & cheese',
+    price: 15000,
+    description: 'Mac & cheese creamy dengan tambahan chicken, memberikan rasa gurih dan lebih mengenyangkan.',
+  },
+  {
+    slug: 'signature-mac',
+    name: 'Signature Mac',
+    category: 'mac & cheese',
     price: 25000,
-    costPrice: 13000,
-    description: 'Dimsum ayam isi 4 dengan saus mentai creamy yang dibakar sampai sedikit gosong.',
+    description:
+      'Mac & cheese ukuran medium dengan chicken dan saus keju yang creamy, cocok untuk menu makan yang lebih puas.',
   },
   {
-    slug: 'rice-bowl-ayam-sambal-matah',
-    name: 'Rice Bowl Ayam Sambal Matah',
-    category: 'makanan',
-    price: 28000,
-    costPrice: 15000,
-    description: 'Nasi hangat, ayam crispy, dan sambal matah segar dengan aroma serai dan jeruk limau.',
-  },
-  {
-    slug: 'seblak-ceker-pedas',
-    name: 'Seblak Ceker Pedas',
-    category: 'makanan',
-    price: 22000,
-    costPrice: 11000,
-    description: 'Kerupuk basah, ceker empuk, dan kencur dalam kuah pedas. Level pedas bisa dipilih.',
-  },
-  {
-    slug: 'croffle-cokelat-almond',
-    name: 'Croffle Cokelat Almond',
-    category: 'snack',
-    price: 20000,
-    costPrice: 9000,
-    description: 'Croissant yang dipanggang di cetakan waffle, disiram cokelat leleh dan taburan almond.',
-  },
-  {
-    slug: 'cireng-rujak',
-    name: 'Cireng Rujak',
-    category: 'snack',
-    price: 15000,
-    costPrice: 6000,
-    description: 'Cireng renyah di luar, kenyal di dalam, dengan cocolan bumbu rujak manis pedas.',
-  },
-  {
-    slug: 'es-kopi-susu-gula-aren',
-    name: 'Es Kopi Susu Gula Aren',
-    category: 'minuman',
-    price: 18000,
-    costPrice: 7000,
-    description: 'Espresso, susu segar, dan gula aren asli. Manisnya pas untuk teman nongkrong.',
-  },
-  {
-    slug: 'matcha-latte',
-    name: 'Matcha Latte',
-    category: 'minuman',
-    price: 22000,
-    costPrice: 9000,
-    description: 'Matcha Jepang dikocok dengan susu, bisa dingin atau panas.',
-  },
-  {
-    slug: 'es-thai-tea',
-    name: 'Es Thai Tea',
-    category: 'minuman',
-    price: 15000,
-    costPrice: 5000,
-    description: 'Teh Thailand pekat dengan susu kental manis dan es batu.',
+    slug: 'deluxe-mac',
+    name: 'Deluxe Mac',
+    category: 'mac & cheese',
+    price: 30000,
+    description: 'Mac & cheese dengan chicken dan lettuce, perpaduan creamy, gurih, dan segar dalam satu sajian.',
   },
 ];
 
 await runCli(async () => {
+  // Production menus are entered by the owner in the admin panel, so photos and availability stay theirs.
   if (dbEnv.NODE_ENV === 'production') {
-    throw new Error('seed:menus hanya untuk pengembangan. Jangan isi data contoh ke database produksi.');
+    throw new Error('seed:menus hanya untuk database pengembangan. Menu produksi diisi owner lewat panel admin.');
   }
 
   let inserted = 0;
-  for (const menu of SAMPLE_MENUS) {
+  for (const menu of MENUS) {
     const { rowCount } = await pool.query(
-      `INSERT INTO menus (slug, name, category, price, cost_price, description)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO menus (slug, name, category, price, description)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (slug) DO NOTHING`,
-      [
-        menu.slug,
-        menu.name,
-        menu.category,
-        menu.price,
-        menu.costPrice,
-        `${SAMPLE_LABEL} ${menu.description}`,
-      ],
+      [menu.slug, menu.name, menu.category, menu.price, menu.description],
     );
     inserted += rowCount;
   }
 
-  console.log(`${inserted} menu contoh ditambahkan, ${SAMPLE_MENUS.length - inserted} sudah ada.`);
+  console.log(`${inserted} menu ditambahkan, ${MENUS.length - inserted} sudah ada.`);
 });

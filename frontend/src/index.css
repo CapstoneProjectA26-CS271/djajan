@@ -1,25 +1,29 @@
 @import "tailwindcss";
 
+/* Palet DJAJAN (kuning & oranye). Pasangan yang lolos WCAG AA (≥ 4.5:1) ada di docs/UI_DESIGN.md.
+   Jangan taruh teks putih di atas brand, teks brand-dark di atas accent, atau teks ink di atas brand-dark. */
 @theme {
-  --color-brand: #ff8c24;
-  --color-brand-dark: #8c2d0e;
-  --color-accent: #ffda45;
-  --color-surface: #fff9ee;
-  --color-ink: #412114;
+  --color-brand: #f26b0f;
+  --color-brand-dark: #a63a05;
+  --color-brand-soft: #fff4d1;
+  --color-accent: #ffc93c;
+  --color-ink: #3a1a06;
 }
 
-body { @apply bg-surface text-ink; }
+body { @apply bg-brand-soft text-ink; }
 .frame { @apply mx-auto max-w-6xl px-4 sm:px-8; }
-.hero { @apply bg-brand-dark text-white; background: radial-gradient(ellipse at 80% 55%, #c93422, #951b18 75%); }
+.hero { @apply bg-accent text-ink; }
 .hero-layout { @apply grid items-center gap-6 py-10 md:grid-cols-2 md:py-14; }
 .hero-layout > * { min-width: 0; }
-.hero-action { @apply bg-accent text-ink hover:bg-orange-200; }
+.hero-placeholder { @apply flex aspect-4/3 w-full items-center justify-center rounded-3xl bg-brand text-8xl; }
 .action { @apply inline-flex min-h-11 items-center rounded-full bg-brand-dark px-5 py-2 font-bold text-white hover:bg-ink; }
-.filter { @apply min-h-11 cursor-pointer rounded-full border border-brand-dark px-4 font-semibold; }
+.filter { @apply min-h-11 cursor-pointer rounded-full border-2 border-ink bg-white px-4 font-bold; }
 .filter[aria-pressed="true"] { @apply bg-accent; }
+.price { @apply text-lg font-black text-brand-dark; }
 .menu-card { @apply flex h-full min-w-0 flex-col; }
 .menu-card-link { @apply block flex-1; overflow-wrap: anywhere; }
-.menu-photo { @apply aspect-3/2 w-full rounded-lg object-cover; transition: transform 180ms ease; }
+.menu-photo { @apply aspect-4/3 w-full rounded-2xl object-cover; transition: transform 180ms ease; }
+.photo-placeholder { @apply flex items-center justify-center bg-brand p-3 text-center leading-tight font-black text-ink; }
 .menu-card-link:hover .menu-photo { transform: translateY(-4px); }
 .menu-card-link:hover h3 { @apply text-brand-dark underline underline-offset-4; }
 .menu-order { @apply mt-2 inline-flex min-h-11 items-center gap-2 self-start text-sm font-bold text-brand-dark hover:underline; }

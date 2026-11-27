@@ -37,7 +37,7 @@ CREATE TABLE captions (
   menu_id         uuid NOT NULL REFERENCES menus(id),
   channel         channel NOT NULL,
   variant         char(1) NOT NULL CHECK (variant IN ('a','b','c')),
-  style           text NOT NULL,                -- mis. 'fomo', 'cerita', 'promo'
+  style           text NOT NULL,                -- 'promo' | 'soft_selling' | 'interaksi' (docs/AI_SPEC.md)
   content         text NOT NULL,
   promo_price     integer,
   provider        text NOT NULL CHECK (provider IN ('gemini','groq','template')),
