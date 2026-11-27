@@ -47,12 +47,21 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # Password role di bawah hanya untuk Postgres sementara di runner ini, bukan rahasia.
       - name: Migrations apply on an empty database
         env:
           DATABASE_URL: postgresql://djajan:djajan@localhost:5432/djajan
+          APP_BACKEND_DB_PASSWORD: ci-app-backend
+          FORECAST_JOB_DB_PASSWORD: ci-forecast-job
+          SYNTHETIC_LOADER_DB_PASSWORD: ci-synthetic-loader
         run: |
           npm run migrate
           npm run migrate:status
+      - name: Database role integration tests
+        env:
+          INTEGRATION_DATABASE_URL: postgresql://djajan:djajan@localhost:5432/djajan
+          SYNTHETIC_LOADER_DB_PASSWORD: ci-synthetic-loader
+        run: npx vitest run tests/syntheticLoader.int.test.js
 
   frontend:
     runs-on: ubuntu-latest

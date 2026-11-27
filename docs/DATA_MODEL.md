@@ -108,8 +108,15 @@ CREATE TABLE posting_time_stats (
 | owner Supabase | migrasi (FS-1) | semua |
 | `app_backend` | backend Node.js | CRUD tabel inti; SELECT tabel hasil pipeline |
 | `forecast_job` | GitHub Actions (ml-pipeline) | SELECT `events`, `menus`; SELECT/INSERT/UPDATE `forecast_runs`, `menu_forecast`, `posting_time_stats` |
+| `synthetic_loader` | generator data sintetis (DS-1), hanya di `djajan-dev` | SELECT `menus`; SELECT/INSERT/DELETE `events`, dibatasi ke data sintetis oleh trigger |
 
 Catatan:
+
+- `synthetic_loader` dibuat oleh `backend/migrations/003_synthetic_loader.sql`. Trigger
+  `events_synthetic_loader_guard` memaksa setiap baris yang ia INSERT menjadi `is_synthetic = true`, dan
+  DELETE atas event non-sintetis membatalkan seluruh statement (`42501`). Contoh hapus ulang data sintetis:
+  `DELETE FROM events WHERE is_synthetic`. Tidak ada UPDATE/TRUNCATE. `forecast_job` tetap read-only pada
+  `events`, sehingga kredensial di GitHub Actions tidak bisa menulis event.
 
 - Role dan GRANT dibuat oleh `backend/migrations/002_roles.sql`. `app_backend` juga mendapat `USAGE` pada
   sequence `events_id_seq`. Tidak ada role aplikasi yang boleh membaca `schema_migrations`.

@@ -101,6 +101,15 @@ describe('renderPlaceholders', () => {
     expect(skipped).toEqual(['FORECAST_JOB_DB_PASSWORD']);
   });
 
+  it('accepts the synthetic_loader password placeholder', () => {
+    const { sql: rendered } = renderPlaceholders(
+      'ALTER ROLE synthetic_loader WITH LOGIN PASSWORD {{SYNTHETIC_LOADER_DB_PASSWORD}};',
+      { SYNTHETIC_LOADER_DB_PASSWORD: 'secret' },
+    );
+
+    expect(rendered).toBe("ALTER ROLE synthetic_loader WITH LOGIN PASSWORD 'secret';");
+  });
+
   it('rejects placeholders that are not on the allowlist', () => {
     expect(() => renderPlaceholders('SELECT {{DATABASE_URL}};', { DATABASE_URL: 'x' })).toThrow(
       'Placeholder tidak dikenal',
