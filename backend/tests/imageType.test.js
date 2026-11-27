@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectImageType } from '../src/utils/imageType.js';
+import { detectImageType, IMAGE_MIME_TYPES, MAX_IMAGE_BYTES } from '../src/utils/imageType.js';
 
 const pad = (bytes) => Buffer.concat([Buffer.from(bytes), Buffer.alloc(16)]);
 
@@ -29,5 +29,15 @@ describe('detectImageType', () => {
   it('rejects non-buffers', () => {
     expect(detectImageType('string')).toBeNull();
     expect(detectImageType(undefined)).toBeNull();
+  });
+});
+
+describe('shared upload limits', () => {
+  it('use bytes (2 MiB), not the decimal "2MB" Supabase would read as 2,000,000', () => {
+    expect(MAX_IMAGE_BYTES).toBe(2_097_152);
+  });
+
+  it('allow exactly the types detectImageType recognizes', () => {
+    expect(IMAGE_MIME_TYPES).toEqual(['image/jpeg', 'image/png', 'image/webp']);
   });
 });

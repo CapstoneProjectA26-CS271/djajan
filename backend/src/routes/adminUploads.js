@@ -3,9 +3,7 @@ import multer from 'multer';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 import { uploadMenuImage } from '../services/storageService.js';
 import { ClientError } from '../utils/errors.js';
-import { detectImageType } from '../utils/imageType.js';
-
-export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+import { detectImageType, MAX_IMAGE_BYTES } from '../utils/imageType.js';
 
 // Memory storage: the file is at most 2 MB and goes straight to Supabase, never to local disk.
 const upload = multer({
